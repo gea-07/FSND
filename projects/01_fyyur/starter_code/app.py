@@ -121,6 +121,37 @@ def venues():
       "num_upcoming_shows": 0,
     }]
   }]
+  data = [{}]
+  try:
+    query = Venue.query.all().order_by(Venue.state).order_by(Venue.city)
+    for venue in query:
+      recordObject = {
+        "city": venue.city,
+        "state": venue.state,
+        "venues": []}
+      print(recordObject)
+
+      #find all the venues in the city and state
+      query2 = Venue.query.filter_by(Venue.city==venue.city, Venue.state==venue.state)
+
+      for cityStateVenue in query2:
+        recordDetailObject = {
+          "id": cityStateVenue.id,
+          "name": cityStateVenue.name,
+          "num_upcoming_shows": Shows.filter_by(
+            Shows.venue_id == cityStateVenue.id,
+            Shows.start_time > datetime.datetime.utcnow()).count()
+        }
+        print(recordDetailObject)
+        recordObject['venues'].append(recordDetailObject)
+        print(recordObject)
+
+      data.append(recordObject)  
+  except:
+    db.session.rollback()
+  finally:
+    db.session.commit()
+  print(data)
   return render_template('pages/venues.html', areas=data);
 
 @app.route('/venues/search', methods=['POST'])
