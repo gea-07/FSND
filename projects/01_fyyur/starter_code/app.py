@@ -98,75 +98,61 @@ def index():
 
 @app.route('/venues')
 def venues():
-  # TODO: replace with real venues data.
+  # Done: replace with real venues data.
   #       num_shows should be aggregated based on number of upcoming shows per venue.
-  data=[{
-    "city": "San Francisco",
-    "state": "CA",
-    "venues": [{
-      "id": 1,
-      "name": "The Musical Hop",
-      "num_upcoming_shows": 0,
-    }, {
-      "id": 3,
-      "name": "Park Square Live Music & Coffee",
-      "num_upcoming_shows": 1,
-    }]
-  }, {
-    "city": "New York",
-    "state": "NY",
-    "venues": [{
-      "id": 2,
-      "name": "The Dueling Pianos Bar",
-      "num_upcoming_shows": 0,
-    }]
-  }]
-  data = [{}]
+  data = []
   try:
-    query = Venue.query.all().order_by(Venue.state).order_by(Venue.city)
+    query = Venue.query.order_by(Venue.state).order_by(Venue.city).all()
     for venue in query:
-      recordObject = {
-        "city": venue.city,
-        "state": venue.state,
-        "venues": []}
-      print(recordObject)
+      data_exists = next((item for item in data if item["city"] == venue.city and item['state']==venue.state), False)  
+      if not data_exists:
+        recordObject = {
+          "city": venue.city,
+          "state": venue.state,
+          "venues": []}
 
-      #find all the venues in the city and state
-      query2 = Venue.query.filter_by(Venue.city==venue.city, Venue.state==venue.state)
+        #find all the venues in the city and state
+        query2 = Venue.query.filter(Venue.city==venue.city, Venue.state==venue.state).all()
 
-      for cityStateVenue in query2:
-        recordDetailObject = {
-          "id": cityStateVenue.id,
-          "name": cityStateVenue.name,
-          "num_upcoming_shows": Shows.filter_by(
-            Shows.venue_id == cityStateVenue.id,
-            Shows.start_time > datetime.datetime.utcnow()).count()
-        }
-        print(recordDetailObject)
-        recordObject['venues'].append(recordDetailObject)
-        print(recordObject)
+        for cityStateVenue in query2:
+          recordDetailObject = {
+            "id": cityStateVenue.id,
+            "name": cityStateVenue.name,
+            "num_upcoming_shows": Shows.query.filter(
+              Shows.venue_id == cityStateVenue.id,
+              Shows.start_time > datetime.utcnow()).count()
+          }
+          recordObject['venues'].append(recordDetailObject)
 
-      data.append(recordObject)  
+        data.append(recordObject)  
   except:
     db.session.rollback()
   finally:
     db.session.commit()
-  print(data)
+
   return render_template('pages/venues.html', areas=data);
 
 @app.route('/venues/search', methods=['POST'])
 def search_venues():
-  # TODO: implement search on artists with partial string search. Ensure it is case-insensitive.
+  # Done: implement search on artists with partial string search. Ensure it is case-insensitive.
   # seach for Hop should return "The Musical Hop".
   # search for "Music" should return "The Musical Hop" and "Park Square Live Music & Coffee"
-  response={
-    "count": 1,
-    "data": [{
-      "id": 2,
-      "name": "The Dueling Pianos Bar",
-      "num_upcoming_shows": 0,
-    }]
+  venue_name= '%{0}%'.format(request.form.get('search_term'))
+  query = Venue.query.filter(Venue.name.ilike(venue_name)).all()
+  data = []
+  response = {
+    "count": len(query),
+    "data": []
   }
+  for venue in query:
+    venueObject = {
+      "id": venue.id,
+      "name": venue.name,
+      "num_upcoming_shows": Shows.query.filter(
+            Shows.venue_id == venue.id,
+            Shows.start_time > datetime.utcnow()).count()
+    }
+    response['data'].append(venueObject)
   return render_template('pages/search_venues.html', results=response, search_term=request.form.get('search_term', ''))
 
 @app.route('/venues/<int:venue_id>')
@@ -286,32 +272,39 @@ def delete_venue(venue_id):
 #  ----------------------------------------------------------------
 @app.route('/artists')
 def artists():
-  # TODO: replace with real data returned from querying the database
-  data=[{
-    "id": 4,
-    "name": "Guns N Petals",
-  }, {
-    "id": 5,
-    "name": "Matt Quevedo",
-  }, {
-    "id": 6,
-    "name": "The Wild Sax Band",
-  }]
+  # Done: replace with real data returned from querying the database
+  data = []
+  query = Artist.query.all()
+  for artist in query:
+    recordObject = {
+      "id": artist.id,
+      "name": artist.name,
+    }
+    data.append(recordObject)
   return render_template('pages/artists.html', artists=data)
 
 @app.route('/artists/search', methods=['POST'])
 def search_artists():
-  # TODO: implement search on artists with partial string search. Ensure it is case-insensitive.
+  # Done: implement search on artists with partial string search. Ensure it is case-insensitive.
   # seach for "A" should return "Guns N Petals", "Matt Quevado", and "The Wild Sax Band".
   # search for "band" should return "The Wild Sax Band".
-  response={
-    "count": 1,
-    "data": [{
-      "id": 4,
-      "name": "Guns N Petals",
-      "num_upcoming_shows": 0,
-    }]
+  artist_name= '%{0}%'.format(request.form.get('search_term'))
+  query = Artist.query.filter(Artist.name.ilike(artist_name)).all()
+  data = []
+  response = {
+    "count": len(query),
+    "data": []
   }
+  for artist in query:
+    artistObject = {
+      "id": artist.id,
+      "name": artist.name,
+      "num_upcoming_shows": Shows.query.filter(
+            Shows.artist_id == artist.id,
+            Shows.start_time > datetime.utcnow()).count()
+    }
+    response['data'].append(artistObject)
+  
   return render_template('pages/search_artists.html', results=response, search_term=request.form.get('search_term', ''))
 
 @app.route('/artists/<int:artist_id>')
@@ -691,6 +684,9 @@ def populate_database():
     db.session.rollback()
   finally:
     db.session.close()
+
+def test_data():
+  None
     
 #----------------------------------------------------------------------------#
 # Launch.
@@ -700,6 +696,7 @@ def populate_database():
 if __name__ == '__main__':
     #initialize the database if empty
     populate_database()
+    test_data()
     app.run(host="localhost", port=8000, debug=True)
 
 # Or specify port manually:
