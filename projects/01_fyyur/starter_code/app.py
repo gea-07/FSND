@@ -1,7 +1,7 @@
 #----------------------------------------------------------------------------#
 # Imports
 #----------------------------------------------------------------------------#
-
+import sys
 import json
 import dateutil.parser
 import babel
@@ -37,21 +37,37 @@ class Shows(db.Model):
     start_time = db.Column(db.DateTime(), primary_key=True)
 
 class Venue(db.Model):
-    __tablename__ = 'venues'
-    id = db.Column(db.Integer, primary_key=True)
-    name = db.Column(db.String)
-    city = db.Column(db.String(120))
-    state = db.Column(db.String(120))
-    address = db.Column(db.String(120))
-    phone = db.Column(db.String(120))
-    image_link = db.Column(db.String(500))
-    facebook_link = db.Column(db.String(120))
-    # Done: implement any missing fields, as a database migration using Flask-Migrate
-    genres = db.Column(db.ARRAY(db.String()))
-    website = db.Column(db.String())
-    seeking_talent = db.Column(db.Boolean, default=True)
-    seeking_description = db.Column(db.String())
-    show = db.relationship('Shows', backref=db.backref('venues', lazy=True))
+  __tablename__ = 'venues'
+  id = db.Column(db.Integer, primary_key=True)
+  name = db.Column(db.String)
+  city = db.Column(db.String(120))
+  state = db.Column(db.String(120))
+  address = db.Column(db.String(120))
+  phone = db.Column(db.String(120))
+  image_link = db.Column(db.String(500))
+  facebook_link = db.Column(db.String(120))
+  # Done: implement any missing fields, as a database migration using Flask-Migrate
+  genres = db.Column(db.ARRAY(db.String()))
+  website = db.Column(db.String())
+  seeking_talent = db.Column(db.Boolean, default=True)
+  seeking_description = db.Column(db.String())
+  show = db.relationship('Shows', backref=db.backref('venues', lazy=True))
+
+  def __repr__(self):
+        return f'<Venue \
+        {self.id}, \
+        {self.name},\
+        {self.city},\
+        {self.state},\
+        {self.address},\
+        {self.phone},\
+        {self.image_link},\
+        {self.facebook_link},\
+        {self.genres},\
+        {self.website},\
+        {self.seeking_talent},\
+        {self.seeking_description}\
+        >'
 
 class Artist(db.Model):
     __tablename__ = 'artists'
@@ -160,7 +176,6 @@ def show_venue(venue_id):
   # shows the venue page with the given venue_id
   # Done: replace with real venue data from the venues table, using venue_id
   try:
-    print("venuid=", venue_id)
     data = []
     past_shows = []
     upcoming_shows = []
@@ -195,6 +210,7 @@ def show_venue(venue_id):
         "website": venue.website,
         "facebook_link": venue.facebook_link,
         "seeking_talent": venue.seeking_talent,
+        "seeking_description": venue.seeking_description,
         "image_link": venue.image_link,
         "past_shows": past_shows,
         "upcoming_shows": upcoming_shows,
@@ -224,7 +240,34 @@ def create_venue_form():
 @app.route('/venues/create', methods=['POST'])
 def create_venue_submission():
   # TODO: insert form data as a new Venue record in the db, instead
+  form = VenueForm()
+  print("In /venues/create:", request.get_json())
+  print("form.name:", form.name.data)
+  print("form.seeking_description:", form.seeking_description.data)
   # TODO: modify data to be the data object returned from db insertion
+  try:
+    venue = Venue(
+      name = form.name.data,
+      city = form.city.data,
+      state = form.state.data,
+      address = form.address.data,
+      phone = form.phone.data,
+      image_link = form.image_link.data,
+      facebook_link = form.facebook_link.data,
+      genres = form.genres.data,
+      website = form.website.data,
+      seeking_talent = form.seeking_talent.data,
+      seeking_description = form.seeking_description.data,
+      )
+    print(venue)
+    db.session.add(venue)
+    db.session.commit()
+  except:
+    db.session.rollback()
+    print(sys.exc_info())
+  finally:
+    db.session.close()
+  return render_template('forms/new_venue.html', form=form)
 
   # on successful db insert, flash success
   flash('Venue ' + request.form['name'] + ' was successfully listed!')
