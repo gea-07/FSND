@@ -24,3 +24,19 @@ if (document.getElementById('new_venue_form') != null)
         })
     }
 }
+
+/*delete venue*/ 
+const deleteBtns = document.querySelectorAll('.venue_delete_button');
+for (let i = 0; i < deleteBtns.length; i++) {
+    const btn = deleteBtns[i];
+    btn.onclick = function(e) {
+        const venueID = e.target.dataset['id'];
+        fetch('/venues/'+venueID,{
+            method: 'DELETE'
+        })
+        .then(function() {
+            const item = e.target.parentElement;
+            item.remove();
+        })
+    }
+}

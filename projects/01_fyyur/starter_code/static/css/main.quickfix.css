@@ -7,3 +7,14 @@
  * main.css.
  */
 
+.venue_delete_button {
+    -webkit-appearance: none;
+    border:none;
+    outline: none;
+    color:red;
+    display:inline-flex;
+}
+
+li.item {
+    clear:both;
+}

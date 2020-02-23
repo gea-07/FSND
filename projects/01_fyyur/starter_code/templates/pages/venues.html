@@ -6,12 +6,14 @@
 	<ul class="items">
 		{% for venue in area.venues %}
 		<li>
+			<button class="venue_delete_button" data-id="{{venue.id}}">&cross;</button>
 			<a href="/venues/{{ venue.id }}">
 				<i class="fas fa-music"></i>
 				<div class="item">
-					<h5>{{ venue.name }}</h5>
+					<h5 class="venue_id">{{ venue.name }}</h5>
 				</div>
 			</a>
+
 		</li>
 		{% endfor %}
 	</ul>
