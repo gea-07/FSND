@@ -1,3 +1,4 @@
+/* create new venues */
 if (document.getElementById('new_venue_form') != null)
 {
     document.getElementById('new_venue_form').onsubmit = function(e) {
@@ -40,3 +41,12 @@ for (let i = 0; i < deleteBtns.length; i++) {
         })
     }
 }
+
+/* edit artist form */
+/*
+if (document.getElementById('edit_artist_form') != null)
+{
+    document.getElementById('edit_artist_form').onload = function(e) {
+        e.preventDefault()
+        document.getElementById('genres'))
+*/
