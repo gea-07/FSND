@@ -437,9 +437,26 @@ def edit_artist(artist_id):
 
 @app.route('/artists/<int:artist_id>/edit', methods=['POST'])
 def edit_artist_submission(artist_id):
-  # TODO: take values from the form submitted, and update existing
+  # Done: take values from the form submitted, and update existing
   # artist record with ID <artist_id> using the new attributes
-
+  try:
+    artist = {}
+    form = ArtistForm()
+    print(form)
+    artist = Artist.query.get(artist_id)
+    if artist:
+      artist.name = form.name.data
+      artist.genres = form.genres.data
+      artist.city = form.city.data
+      artist.state = form.state.data
+      artist.phone = form.phone.data
+      artist.facebook_link = form.facebook_link.data
+      db.session.commit()
+  except:
+    db.session.rollback()
+    print(sys.exc_info())
+  finally:
+    db.session.close() 
   return redirect(url_for('show_artist', artist_id=artist_id))
 
 @app.route('/venues/<int:venue_id>/edit', methods=['GET'])
