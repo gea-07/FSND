@@ -461,22 +461,43 @@ def edit_artist_submission(artist_id):
 
 @app.route('/venues/<int:venue_id>/edit', methods=['GET'])
 def edit_venue(venue_id):
-  form = VenueForm()
-  venue={
-    "id": 1,
-    "name": "The Musical Hop",
-    "genres": ["Jazz", "Reggae", "Swing", "Classical", "Folk"],
-    "address": "1015 Folsom Street",
-    "city": "San Francisco",
-    "state": "CA",
-    "phone": "123-123-1234",
-    "website": "https://www.themusicalhop.com",
-    "facebook_link": "https://www.facebook.com/TheMusicalHop",
-    "seeking_talent": True,
-    "seeking_description": "We are on the lookout for a local artist to play every two weeks. Please call us.",
-    "image_link": "https://images.unsplash.com/photo-1543900694-133f37abaaa5?ixlib=rb-1.2.1&ixid=eyJhcHBfaWQiOjEyMDd9&auto=format&fit=crop&w=400&q=60"
-  }
-  # TODO: populate form with values from venue with ID <venue_id>
+  try:
+    venue = {}
+    form = VenueForm()
+    venue_from_db = Venue.query.get(venue_id)
+    if venue_from_db:
+      venue={
+        "id": venue_from_db.id,
+        "name": venue_from_db.name,
+        "genres": venue_from_db.genres,
+        "address": venue_from_db.address,
+        "city": venue_from_db.city,
+        "state": venue_from_db.state,
+        "phone": venue_from_db.phone,
+        "website": venue_from_db.website,
+        "facebook_link": venue_from_db.facebook_link,
+        "seeking_talent": venue_from_db.seeking_talent,
+        "seeking_description": venue_from_db.seeking_description,
+        "image_link": venue_from_db.image_link
+      }
+      # Done: populate form with values from venue with ID <venue_id>
+      form.name.data = venue_from_db.name
+      form.city.data = venue_from_db.city
+      form.state.data = venue_from_db.state
+      form.address.data = venue_from_db.address
+      form.phone.data = venue_from_db.phone
+      form.image_link.data = venue_from_db.image_link
+      form.genres.data = venue_from_db.genres
+      form.facebook_link.data = venue_from_db.facebook_link
+      form.website.data = venue_from_db.website
+      form.seeking_talent = venue_from_db.seeking_talent
+      form.seeking_description = venue_from_db.seeking_description
+  except:
+    db.session.rollback()
+    print(sys.exc_info())
+  finally:
+    db.session.close() 
+
   return render_template('forms/edit_venue.html', form=form, venue=venue)
 
 @app.route('/venues/<int:venue_id>/edit', methods=['POST'])
