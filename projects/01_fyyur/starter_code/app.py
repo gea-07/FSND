@@ -853,7 +853,7 @@ def test_data():
 if __name__ == '__main__':
     #initialize the database if empty
     populate_database()
-    test_data()
+    #test_data()
     app.run(host="localhost", port=8000, debug=True)
 
 # Or specify port manually:
