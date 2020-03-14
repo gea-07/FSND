@@ -68,7 +68,11 @@ class Category(db.Model):
   id = Column(Integer, primary_key=True)
   type = Column(String)
 
-  def __init__(self, type):
+  def __init__(self, type:type):
+    self.type = type
+
+  def __init__(self, id:id, type:type):
+    self.id = id
     self.type = type
 
   def insert(self):

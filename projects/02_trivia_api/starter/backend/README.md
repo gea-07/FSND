@@ -89,6 +89,86 @@ GET '/categories'
 
 ```
 
+GET '/questions?page=<page_argument>'
+- Fetches a list of questions from the database
+- Request Arguments: page_argument - page number, where each page represents the 10 questions for that page
+-Returns: An object with the following example key-value pair definition, if successful:
+{
+    'success': True,
+    'questions': <list of questions for that page>,
+    'total_questions': <total questions in the database>,
+    'categories': <list of categories from the database>,
+    'current_category': None
+}
+Will return 404 if questions for given page is not found or 422 if request is unprocessable
+
+DELETE 'questions/<question_id>
+- Deletes a question from the database
+- Request arguments: question_id - id of the question to delete
+- Returns:  An object with the following example key-value pair definition, if successful:
+{
+    'success': True,
+    'categories': None,
+    'current_category': None,
+    'questions': <list of all questions in database>,
+    'total_questions': <total # question in database>
+}
+Will return 404 if question to be deleted is not found in the database, 400
+if request argument is missing, or 422 if request is unprocessable
+
+POST '/questions?question=<question string>&answer=<answer string>&category=<category num>&difficulty=<difficulty num>'
+- Add/Inserts a new question to the database
+- Request Arguments:
+question - question string
+answer - answer string
+category - category number as int
+question - question number as int
+- Returns:  An object with the following example key-value pair definition, if successful:
+{
+    'success': True,
+    'created': <new question.id that got inserted>,
+    'questions': <list of all questions in db>,
+    'total_questions': <total number of questions in the database>
+
+}
+Will return 422 if request is unprocessable
+
+POST '/searchForQuestions?searchTerm=<search string>
+- Searches for a term in all the questions in the database
+- Request arguments: searchTerm - substring to search for in the question field of the questions database
+- Returns:  An object with the following example key-value pair definition, if successful:
+{         
+    'success': True,
+    'current_category': None,
+    'questions': <list of questions that has the substring value in searchTerm>,
+    'total_questions': len(questions)
+}
+Will return 404 if question to be deleted is not found in the database, 400
+if request argument is missing, or 422 if request is unprocessable
+
+GET '/categories/<category_id>'
+- Fetches the questions for a certain category
+- Request arguments: category_id - category of a question
+- Returns: An object with the following example key-value pair definition, if successful:
+{         
+    'success': True,
+    'questions': <list of questions for given category>,
+    'total_questions': <len(questions) for given category>,
+    'current_category': category_id
+}
+Will return 404 if question(s) cannot be found for the given category, or 422 if request is unprocessable
+
+POST '/quizzes'
+- Fetches a random question to play the quiz that has not been played before
+- Request arguments: 
+category - quiz category, if 0 it will fetch all questions from the database; otherwise, all questions from the database the matches the category id 
+previous question - list of previously asked questions, maybe empty
+- Returns: Return a random question within the given category. Specifically, the following key-value pair
+{
+    'success': True,
+    'question': <random question, never played yet>
+}
+If unprocessable, returns 422; 400 if category parameter is missing
 
 ## Testing
 To run the tests, run

@@ -47,27 +47,31 @@ def create_app(test_config=None):
   '''
   @app.route('/categories', methods=['GET'])
   def get_categories():
+    abort_code = None
     try:
       categories = Category.query.order_by(Category.id).all()
       categories_fe = {category.id:category.type for category in categories}
 
       if len(categories) == 0:
-        abort(404)
-
+        abort_code = 404
+    except:
+      db.session.rollback()
+      print(sys.exc_info())
+      abort_code = 422
+    finally:
+      db.session.close()
+    
+    if abort_code:
+      return abort(abort_code)
+    else:
       return jsonify({
         'success': True,
         'categories': categories_fe,
         'total_categories': len(Category.query.all())
-      })
-    except:
-      db.session.rollback()
-      print(sys.exc_info())
-      abort(422)
-    finally:
-      db.session.close()
+    })
 
   '''
-  @TODO: 
+  @Done: 
   Create an endpoint to handle GET requests for questions, 
   including pagination (every 10 questions). 
   This endpoint should return a list of questions, 
@@ -81,32 +85,34 @@ def create_app(test_config=None):
   '''
   @app.route('/questions', methods=['GET'])
   def get_questions():
+    abort_code = None
     try:
       selection = Question.query.order_by(Question.id).all()
       current_questions = paginate_questions(request, selection)
-
       categories = Category.query.order_by(Category.id).all()
       categories_fe = {category.id:category.type for category in categories}
-
       if len(current_questions) == 0:
-        abort(404)
-    
-      return jsonify({
-        'success': True,
-        'questions': current_questions,
-        'total_questions': len(Question.query.all()),
-        'categories': categories_fe,
-        'current_category': None
-      })
+        abort_code = 404
     except:
       db.session.rollback()
       print(sys.exc_info())
-      abort(422)
+      abort_code = 422
     finally:
       db.session.close()
 
+    if abort_code:
+      abort(abort_code)
+    else:
+        return jsonify({
+            'success': True,
+            'questions': current_questions,
+            'total_questions': len(Question.query.all()),
+            'categories': categories_fe,
+            'current_category': None
+        })
+  
   '''
-  @TODO: 
+  @Done: 
   Create an endpoint to DELETE question using a question ID. 
 
   TEST: When you click the trash icon next to a question, the question will be removed.
@@ -115,31 +121,36 @@ def create_app(test_config=None):
 
   @app.route('/questions/<int:question_id>', methods=['DELETE'])
   def delete_question(question_id):
+    abort_code = None
     try:
-        question = Question.query.filter(Question.id == question_id).one_or_none()
+      question = Question.query.filter(Question.id == question_id).one_or_none()
 
-        if question is None:
-            abort(404)
-
+      if question is None:
+          abort_code = 404
+      else:
         question.delete()
         selection = Question.query.order_by(Question.id).all()
-        current_questions = [question.format() for question in selection]
-
-        return jsonify({
-            'categories': None,
-            'current_category': None,
-            'questions': current_questions,
-            'total_questions': len(Question.query.all())
-        })
+        questions = [question.format() for question in selection]
     except:
       db.session.rollback()
       print(sys.exc_info())
-      abort(422)
+      abort_code = 422
     finally:
       db.session.close()
+    
+    if abort_code:
+      abort(abort_code)
+    else:
+      return jsonify({
+          'success': True,
+          'categories': None,
+          'current_category': None,
+          'questions': questions,
+          'total_questions': len(Question.query.all())
+      })
 
   '''
-  @TODO: 
+  @Done: 
   Create an endpoint to POST a new question, 
   which will require the question and answer text, 
   category, and difficulty score.
@@ -150,6 +161,7 @@ def create_app(test_config=None):
   '''
   @app.route('/questions', methods=['POST'])
   def add_question():
+    abort_code = None
     try:
       body = request.get_json()
       new_question = body.get('question', None),
@@ -157,32 +169,39 @@ def create_app(test_config=None):
       new_category = body.get('category', None),
       new_difficulty = body.get('difficulty', None)
 
-      question = Question(
-        question = new_question,
-        answer = new_answer,
-        category = new_category,
-        difficulty = new_difficulty
-        )
-      question.insert()
+      if (new_question is None) or new_answer is None or new_category is None or new_difficulty is None:
+        abort_code = 400
+      else:  
+        question = Question(
+          question = new_question,
+          answer = new_answer,
+          category = new_category,
+          difficulty = new_difficulty
+          )
+        question.insert()
 
-      selection = Question.query.order_by(Question.id).all()
-      current_questions = paginate_questions(request, selection)
+        selection = Question.query.order_by(Question.id).all()
+        questions = [question.format() for question in selection]
 
-      return jsonify({
-          'success': True,
-          'created': question.id,
-          'questions': current_questions,
-          'total_questions': len(Question.query.all())
-      })
     except:
       db.session.rollback()
       print(sys.exc_info())
-      abort(422)
+      abort_code = 422
     finally:
       db.session.close()
 
+    if abort_code:
+      abort(abort_code)
+    else:
+      return jsonify({
+          'success': True,
+          'created': question.id,
+          'questions': questions,
+          'total_questions': len(Question.query.all())
+      })
+
   '''
-  @TODO: 
+  @Done: 
   Create a POST endpoint to get questions based on a search term. 
   It should return any questions for whom the search term 
   is a substring of the question. 
@@ -193,27 +212,40 @@ def create_app(test_config=None):
   '''
   @app.route('/searchForQuestions', methods=['POST'])
   def searchquestions():
-    body = request.get_json()
-    search_term = body.get('searchTerm', None)
+    abort_code = None
     try:
-      selection = Question.query.order_by(Question.id).filter(Question.question.ilike('%{}%'.format(search_term))).all()
-      questions = paginate_questions(request, selection)
-    except:
+      body = request.get_json()
+      search_term = body.get('searchTerm', None)
+
+      if search_term is None:
+        abort_code = 400
+      else:
+        selection = Question.query.order_by(Question.id).filter(Question.question.ilike('%{}%'.format(search_term))).all()
+        questions = []
+        if len(selection):
+          questions = [question.format() for question in selection]
+        else:
+          abort_code = 404 
+    except Exception as e:
+      print('Exception in searchForQuestions:', 'type: ', type(e), 'exception:', e)
       db.session.rollback()
       print(sys.exc_info())
-      abort(404)
+      abort_code = 422
     finally:
       db.session.close()
     
-    return jsonify({
-        'success': True,
-        'current_category': None,
-        'questions': questions,
-        'total_questions': len(questions)
-    })
+    if (abort_code):
+      abort(abort_code)
+    else:
+      return jsonify({
+          'success': True,
+          'current_category': None,
+          'questions': questions,
+          'total_questions': len(questions)
+      })
 
   '''
-  @TODO: 
+  @Done: 
   Create a GET endpoint to get questions based on category. 
 
   TEST: In the "List" tab / main screen, clicking on one of the 
@@ -222,26 +254,34 @@ def create_app(test_config=None):
   '''
   @app.route('/categories/<string:category_id>/questions', methods=['GET'])
   def getquestions(category_id):
+    abort_code = None
+    questions = []
     try:
       selection = Question.query.order_by(Question.id).filter(Question.category == category_id).all()
-      questions = paginate_questions(request, selection)
+      if selection is None:
+        abort_code = 404
+      else:
+        questions = [question.format() for question in selection]
     except:
       db.session.rollback()
       print(sys.exc_info())
-      abort(404)
+      abort_code = 422
     finally:
       db.session.close()
     
-    return jsonify({
-        'success': True,
-        'questions': questions,
-        'total_questions': len(questions),
-        'current_category': category_id
-    })
+    if abort_code:
+      abort(abort_code)
+    else:
+      return jsonify({
+          'success': True,
+          'questions': questions,
+          'total_questions': len(questions),
+          'current_category': category_id
+      })
 
 
   '''
-  @TODO: 
+  @Done: 
   Create a POST endpoint to get questions to play the quiz. 
   This endpoint should take category and previous question parameters 
   and return a random questions within the given category, 
@@ -253,41 +293,49 @@ def create_app(test_config=None):
   '''
   @app.route('/quizzes',methods=['POST'])
   def playquestions():
-    body = request.get_json()
-    category = body.get('quiz_category', None)
-    previous_questions = body.get('previous_questions', None)
-    questions = []
-    selections = []
-    question = None
+    abort_code = None
     try:
-      if category['id'] == 0:
-        selections = Question.query.order_by(Question.id).all()
-      else:
-        selections = Question.query.order_by(Question.id).filter(Question.category == category['id']).all()
-      questions = [question.format() for question in selections]
-      for previous_question in previous_questions:
-        i = 0
-        while selections and i < len(selections):
-          if selections[i].id == int(previous_question):
-            selections.pop(i)
-            break
-          i+=1
-      if selections:
-        questions = [question.format() for question in selections]
-        index = random.randint(0, len(questions)-1)
-        question = questions[index]
+      body = request.get_json()
+      category = body.get('quiz_category', None)
+      if category is None:
+        abort_code = 400
+      else:  
+        previous_questions = body.get('previous_questions', None)
+        questions = []
+        selections = []
+        question = None
       
+        if category['id'] == 0:
+          selections = Question.query.order_by(Question.id).all()
+        else:
+          selections = Question.query.order_by(Question.id).filter(Question.category == category['id']).all()
+        questions = [question.format() for question in selections]
+        for previous_question in previous_questions:
+          i = 0
+          while selections and i < len(selections):
+            if selections[i].id == int(previous_question):
+              selections.pop(i)
+              break
+            i+=1
+        if selections:
+          questions = [question.format() for question in selections]
+          index = random.randint(0, len(questions)-1)
+          question = questions[index]
+        
     except:
       db.session.rollback()
       print(sys.exc_info())
-      abort(404)
+      abort_code = 422
     finally:
       db.session.close()
     
-    return jsonify({
-        'success': True,
-        'question': question,
-    })
+    if abort_code:
+      abort(abort_code)
+    else:
+      return jsonify({
+          'success': True,
+          'question': question,
+      })
 
   '''
   @Done: 
