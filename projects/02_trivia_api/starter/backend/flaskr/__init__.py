@@ -258,11 +258,12 @@ def create_app(test_config=None):
     questions = []
     try:
       selection = Question.query.order_by(Question.id).filter(Question.category == category_id).all()
-      if selection is None:
+      if len(selection) == 0:
         abort_code = 404
       else:
         questions = [question.format() for question in selection]
-    except:
+    except Exception as e:
+      print('Exception in searchForQuestions:', 'type: ', type(e), 'exception:', e)
       db.session.rollback()
       print(sys.exc_info())
       abort_code = 422
@@ -309,20 +310,26 @@ def create_app(test_config=None):
           selections = Question.query.order_by(Question.id).all()
         else:
           selections = Question.query.order_by(Question.id).filter(Question.category == category['id']).all()
-        questions = [question.format() for question in selections]
-        for previous_question in previous_questions:
-          i = 0
-          while selections and i < len(selections):
-            if selections[i].id == int(previous_question):
-              selections.pop(i)
-              break
-            i+=1
-        if selections:
+
+        if len(selections) == 0:
+          abort_code = 404
+        else:
           questions = [question.format() for question in selections]
-          index = random.randint(0, len(questions)-1)
-          question = questions[index]
-        
-    except:
+
+          for previous_question in previous_questions:
+            i = 0
+            while selections and i < len(selections):
+              if selections[i].id == int(previous_question):
+                selections.pop(i)
+                break
+              i+=1
+          if selections:
+            questions = [question.format() for question in selections]
+            index = random.randint(0, len(questions)-1)
+            question = questions[index]
+          
+    except Exception as e:
+      print('Exception in searchForQuestions:', 'type: ', type(e), 'exception:', e)
       db.session.rollback()
       print(sys.exc_info())
       abort_code = 422

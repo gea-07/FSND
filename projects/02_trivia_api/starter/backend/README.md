@@ -168,7 +168,7 @@ previous question - list of previously asked questions, maybe empty
     'success': True,
     'question': <random question, never played yet>
 }
-If unprocessable, returns 422; 400 if category parameter is missing
+If unprocessable, returns 422; 400 if category parameter is missing; 404 is no questions can be found
 
 ## Testing
 To run the tests, run

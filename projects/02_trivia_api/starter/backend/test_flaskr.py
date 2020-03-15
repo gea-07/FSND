@@ -35,23 +35,13 @@ class TriviaTestCase(unittest.TestCase):
     """
 
     def test_404_get_categories(self):
-        '''Test receiving 404 when trying to get empty categories'''
-        categories = Category.query.all()
-        categories_copy = [category_copy.format() for category_copy in categories]
-        for category in categories:
-            category.delete()
-
-        res = self.client().get('/categories')
+        '''Test receiving 404 when getting categories'''
+        res = self.client().get('/categories/1')
         data = json.loads(res.data)
 
         self.assertFalse(data['success'])
         self.assertEqual(data['message'], 'resource not found')
         self.assertEqual(res.status_code, 404)
-        
-        #now add the categories back to the table, so other tests doesn't run afoul
-        for category in categories_copy:
-            category_object = Category(category['id'], category['type'])
-            category_object.insert()
 
     def test_get_categories(self):
         """Test getting categories. Prefixed with 100 because the 400 version was deleting categories before this test gets called"""
@@ -102,6 +92,22 @@ class TriviaTestCase(unittest.TestCase):
 
                 [self.assertTrue(question2['id'] != question1['id']) for question2 in questions2]
                 self.assertTrue(data['success'])
+
+                #add the question we deleted back so as not to cause other tests to fail
+                res = self.client().post(
+                    '/questions',
+                    headers={'Content-Type': 'application/json'}, 
+                    json =  {
+                        'question':question1['question'],
+                        'answer': question1['answer'],
+                        'category': int(question1['category']),
+                        'difficulty':int(question1['difficulty'])
+                    })
+                data = json.loads(res.data)
+                self.assertTrue(data['success'])
+
+        data = json.loads(res.data)
+        self.assertTrue(data['success'])
     
     def test_404_delete_question(self):
         '''Test deleting a non-existent question'''
@@ -172,6 +178,69 @@ class TriviaTestCase(unittest.TestCase):
         data = json.loads(res.data)
         self.assertFalse(data['success'])
         self.assertEqual(res.status_code, 400)
+
+    def test_get_questions_based_on_category(self):
+        '''Test getting questions based on a category'''
+        categories = Category.query.all()
+        if categories:
+            category = categories[0]
+            if category:
+                res = self.client().get('/categories/' + str(category.id)+'/questions')
+                data = json.loads(res.data)
+                self.assertTrue(data['success'])
+                [self.assertTrue(question['category'] == category.id) for question in data['questions']]
+                
+    def test_404_get_questions_based_on_category(self):
+        '''Test getting questions based on a category but the category is non-existent in the database'''
+        categories = Category.query.all()
+        if categories:
+            category = categories[0]
+            if category:
+                res = self.client().get('/categories/' + str(9000)+'/questions')
+                data = json.loads(res.data)
+                self.assertFalse(data['success'])
+                self.assertEqual(data['message'], "resource not found")
+                self.assertEqual(res.status_code, 404)                
+    
+    def test_quizzes(self):
+        '''Test playing the quiz'''
+        res = self.client().post(
+            '/quizzes',
+            headers={'Content-Type': 'application/json'},
+            json = {
+                'quiz_category': {'id':0},
+                'previous_questions':[11,12,13]
+            })
+        data = json.loads(res.data)
+
+        self.assertTrue(data['success'])
+        self.assertIsNotNone(data['question'])
+        self.assertEqual(res.status_code, 200)
+
+    def test_400_quizzes(self):
+        '''Test getting an error when playing the quiz when category is not submitted with the request'''
+        res = self.client().post(
+            '/quizzes',
+            headers={'Content-Type': 'application/json'},
+            json = {
+                'previous_questions':[11,12,13]
+            })
+        data = json.loads(res.data)
+        self.assertFalse(data['success'])
+        self.assertEqual(res.status_code, 400)
+
+    def test_404_quizzes(self):
+        '''Test getting an error when playing the quiz when quiz category is non-existent'''
+        res = self.client().post(
+            '/quizzes',
+            headers={'Content-Type': 'application/json'},
+            json = {
+                'quiz_category': {'id':9000},
+                'previous_questions':[11,12,13]
+            })
+        data = json.loads(res.data)
+        self.assertFalse(data['success'])
+        self.assertEqual(res.status_code, 404)
 
 
 # Make the tests conveniently executable
